@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import { FadeIn, PressableScale } from '../../components/motion';
 import { Button, Card, Empty, Icon, Screen } from '../../components/ui';
 import { fmtEconomy } from '../../lib/display';
 import { fmtMoney, fmtNum } from '../../lib/format';
@@ -18,19 +19,20 @@ export default function Vehicles() {
           <Empty icon="garage" title="No vehicles" text="Motorcycle, car, truck, bus — add as many as you own." />
         </Card>
       ) : (
-        data.vehicles.map((v) => {
+        data.vehicles.map((v, i) => {
           const st = computeStats(data, v);
           const active = v.id === activeVehicle?.id;
           const cat = categoryInfo(v.category);
           return (
-            <Pressable key={v.id} onPress={() => setActiveVehicle(v.id)}>
+            <FadeIn key={v.id} delay={i * 90}>
+              <PressableScale scaleTo={0.98} onPress={() => setActiveVehicle(v.id)}>
               <Card style={active ? { borderColor: colors.primary, borderWidth: 2 } : undefined}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name={cat.icon} size={28} color={colors.primary} />
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name={cat.icon} size={22} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>{v.name}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>{v.name}</Text>
                     <Text style={{ color: colors.sub, fontSize: 12 }} numberOfLines={1}>
                       {[cat.label, [v.make, v.model, v.year].filter(Boolean).join(' '), v.regNumber].filter(Boolean).join(' · ')}
                     </Text>
@@ -51,13 +53,14 @@ export default function Vehicles() {
                   <Tag text={`Odometer: ${v.odometerUnit}`} />
                   {v.tankCapacity ? <Tag text={`Tank ${v.tankCapacity} L`} /> : null}
                 </View>
-                <View style={{ flexDirection: 'row', marginTop: 12, gap: 8 }}>
+                <View style={{ flexDirection: 'row', marginTop: 8, gap: 6 }}>
                   <Mini label="Odometer" value={st.currentOdometer != null ? `${fmtNum(st.currentOdometer)} ${v.odometerUnit}` : '—'} />
                   <Mini label="Mileage" value={fmtEconomy(settings, v, st.avgRate)} />
                   <Mini label="Spent" value={fmtMoney(settings, st.totalCost, 0)} />
                 </View>
               </Card>
-            </Pressable>
+              </PressableScale>
+            </FadeIn>
           );
         })
       )}

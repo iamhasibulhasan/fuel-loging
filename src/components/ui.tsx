@@ -2,6 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import type { ComponentProps, ReactNode } from 'react';
 import {
+  Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,7 +18,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { fmtDate, parseISODate, toISODate } from '../lib/format';
-import { colors, radius } from '../lib/theme';
+import { photoUri } from '../lib/photo';
+import { Float, PressableScale, useAnimatedTo } from './motion';
+import { colors, radius, themeName } from '../lib/theme';
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -28,7 +32,7 @@ export function Screen({ children, padded = true }: { children: ReactNode; padde
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        contentContainerStyle={[padded && { padding: 16 }, { paddingBottom: 40 }]}
+        contentContainerStyle={[padded && { padding: 12 }, { paddingBottom: 28, width: '100%', maxWidth: 600, alignSelf: 'center' }]}
         keyboardShouldPersistTaps="handled"
       >
         {children}
@@ -88,13 +92,26 @@ export function Col({ children, flex = 1 }: { children: ReactNode; flex?: number
   return <View style={{ flex }}>{children}</View>;
 }
 
-export function DateField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+export function DateField({
+  label,
+  value,
+  onChange,
+  placeholder = 'Not set',
+  onClear,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  /** when given, an empty value is allowed and an "×" clears the date */
+  onClear?: () => void;
+}) {
   if (Platform.OS !== 'android') {
-    return <Field label={label} value={value} onChangeText={onChange} placeholder="YYYY-MM-DD" hint={fmtDate(value)} />;
+    return <Field label={label} value={value} onChangeText={onChange} placeholder="YYYY-MM-DD" hint={value ? fmtDate(value) : undefined} />;
   }
   const open = () =>
     DateTimePickerAndroid.open({
-      value: parseISODate(value),
+      value: value ? parseISODate(value) : new Date(),
       mode: 'date',
       maximumDate: new Date(2100, 0, 1),
       onValueChange: (_e, d) => d && onChange(toISODate(d)),
@@ -104,9 +121,49 @@ export function DateField({ label, value, onChange }: { label: string; value: st
       <Label>{label}</Label>
       <Pressable onPress={open} style={[s.inputWrap, { paddingVertical: 12 }]}>
         <Icon name="calendar" size={18} color={colors.sub} />
-        <Text style={[s.input, { paddingVertical: 0, marginLeft: 8 }]}>{fmtDate(value)}</Text>
-        <Text style={s.suffix}>Change</Text>
+        <Text style={[s.input, { paddingVertical: 0, marginLeft: 8 }, !value && { color: colors.faint }]}>
+          {value ? fmtDate(value) : placeholder}
+        </Text>
+        {onClear && value ? (
+          <Pressable onPress={onClear} hitSlop={10}>
+            <Icon name="close-circle" size={18} color={colors.faint} />
+          </Pressable>
+        ) : (
+          <Text style={s.suffix}>{value ? 'Change' : 'Set'}</Text>
+        )}
       </Pressable>
+    </View>
+  );
+}
+
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+export function Avatar({ name, photo, size = 56 }: { name: string; photo?: string | null; size?: number }) {
+  const ini = initials(name);
+  const uri = photoUri(photo);
+  if (uri) {
+    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.border }} />;
+  }
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {ini ? (
+        <Text style={{ color: '#fff', fontWeight: '800', fontSize: size * 0.38 }}>{ini}</Text>
+      ) : (
+        <Icon name="account" size={size * 0.55} color="#fff" />
+      )}
     </View>
   );
 }
@@ -152,7 +209,7 @@ export function SwitchRow({ label, value, onChange, hint }: { label: string; val
   return (
     <View style={[s.field, { flexDirection: 'row', alignItems: 'center' }]}>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500' }}>{label}</Text>
+        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>{label}</Text>
         {hint ? <Text style={s.hint}>{hint}</Text> : null}
       </View>
       <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.primary }} />
@@ -178,17 +235,10 @@ export function Button({
   const bg = variant === 'primary' ? color : variant === 'danger' ? colors.dangerSoft : 'transparent';
   const fg = variant === 'primary' ? '#fff' : variant === 'danger' ? colors.danger : color;
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        s.btn,
-        { backgroundColor: bg, borderColor: variant === 'outline' ? color : bg, opacity: pressed ? 0.8 : 1 },
-        style,
-      ]}
-    >
+    <PressableScale scaleTo={0.97} onPress={onPress} style={[s.btn, { backgroundColor: bg, borderColor: variant === 'outline' ? color : bg }, style]}>
       {icon ? <Icon name={icon} size={18} color={fg} /> : null}
       <Text style={[s.btnText, { color: fg }]}>{title}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -217,21 +267,31 @@ export function StatGrid({ children }: { children: ReactNode }) {
   return <View style={s.grid}>{children}</View>;
 }
 
-export function Progress({ value, color }: { value: number; color: string }) {
+export function Progress({ value, color, delay = 150 }: { value: number; color: string; delay?: number }) {
   const pct = Math.max(0, Math.min(1, value));
+  const anim = useAnimatedTo(pct, { delay });
   return (
     <View style={s.progressTrack}>
-      <View style={{ width: `${pct * 100}%`, backgroundColor: color, height: '100%', borderRadius: 6 }} />
+      <Animated.View
+        style={{
+          width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+          backgroundColor: color,
+          height: '100%',
+          borderRadius: 6,
+        }}
+      />
     </View>
   );
 }
 
 export function Empty({ icon, title, text, action }: { icon: string; title: string; text?: string; action?: ReactNode }) {
   return (
-    <View style={{ alignItems: 'center', padding: 32, gap: 8 }}>
-      <View style={[s.emptyIcon]}>
-        <Icon name={icon} size={36} color={colors.primary} />
-      </View>
+    <View style={{ alignItems: 'center', padding: 20, gap: 6 }}>
+      <Float>
+        <View style={[s.emptyIcon]}>
+          <Icon name={icon} size={36} color={colors.primary} />
+        </View>
+      </Float>
       <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center' }}>{title}</Text>
       {text ? <Text style={{ color: colors.sub, textAlign: 'center', lineHeight: 20 }}>{text}</Text> : null}
       {action ? <View style={{ marginTop: 12, alignSelf: 'stretch' }}>{action}</View> : null}
@@ -248,69 +308,81 @@ export function KV({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
   );
 }
 
-export const s = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 10 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.sub, textTransform: 'uppercase', letterSpacing: 0.6 },
-  label: { fontSize: 13, color: colors.sub, marginBottom: 6, fontWeight: '600' },
-  field: { marginBottom: 14 },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-  },
-  input: { flex: 1, fontSize: 16, color: colors.text, paddingVertical: 11 },
-  suffix: { color: colors.sub, fontWeight: '600', marginLeft: 8 },
-  hint: { color: colors.faint, fontSize: 12, marginTop: 4 },
-  error: { color: colors.danger, fontSize: 12, marginTop: 4 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  chipText: { color: colors.text, fontWeight: '600', fontSize: 13 },
-  btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-  },
-  btnText: { fontSize: 16, fontWeight: '700' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  stat: {
-    flexGrow: 1,
-    flexBasis: '45%',
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  statLabel: { color: colors.sub, fontSize: 12, fontWeight: '600', flexShrink: 1 },
-  statValue: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 6 },
-  statSub: { color: colors.faint, fontSize: 11, marginTop: 2 },
-  progressTrack: { height: 10, backgroundColor: colors.border, borderRadius: 6, overflow: 'hidden' },
-  emptyIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  kv: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-});
+// Styles depend on the active theme's colours, so they're built per theme and cached.
+const makeStyles = () =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius,
+      padding: 12,
+      marginBottom: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+    },
+    sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, marginBottom: 6 },
+    sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.sub, textTransform: 'uppercase', letterSpacing: 0.6 },
+    label: { fontSize: 12, color: colors.sub, marginBottom: 4, fontWeight: '600' },
+    field: { marginBottom: 10 },
+    inputWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+    },
+    input: { flex: 1, fontSize: 15, color: colors.text, paddingVertical: 8 },
+    suffix: { color: colors.sub, fontWeight: '600', marginLeft: 6, fontSize: 13 },
+    hint: { color: colors.faint, fontSize: 11, marginTop: 3 },
+    error: { color: colors.danger, fontSize: 11, marginTop: 3 },
+    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.input,
+    },
+    chipText: { color: colors.text, fontWeight: '600', fontSize: 12 },
+    btn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 11,
+      borderRadius: 12,
+      borderWidth: 1.5,
+    },
+    btnText: { fontSize: 15, fontWeight: '700' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    stat: {
+      flexGrow: 1,
+      flexBasis: '45%',
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+    },
+    statLabel: { color: colors.sub, fontSize: 11, fontWeight: '600', flexShrink: 1 },
+    statValue: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 4 },
+    statSub: { color: colors.faint, fontSize: 10, marginTop: 1 },
+    progressTrack: { height: 8, backgroundColor: colors.track, borderRadius: 5, overflow: 'hidden' },
+    emptyIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    kv: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  });
+
+type Styles = ReturnType<typeof makeStyles>;
+let styleCache: { theme: string; styles: Styles } | null = null;
+const currentStyles = (): Styles => {
+  if (!styleCache || styleCache.theme !== themeName()) styleCache = { theme: themeName(), styles: makeStyles() };
+  return styleCache.styles;
+};
+
+/** Theme-aware styles: `s.card` always returns the style for the active theme. */
+export const s = new Proxy({} as Styles, { get: (_t, key) => currentStyles()[key as keyof Styles] });

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { BarChart } from '../../components/BarChart';
+import { FadeIn } from '../../components/motion';
 import { Button, Card, Chips, Empty, KV, Screen, SectionTitle, Stat, StatGrid } from '../../components/ui';
 import { VehicleSwitcher } from '../../components/VehicleSwitcher';
 import { fmtEconomy, fmtVolume, pricePerUnit, useActiveStats } from '../../lib/display';
@@ -59,6 +60,7 @@ export default function Reports() {
       <VehicleSwitcher />
 
       <SectionTitle>Fuel efficiency</SectionTitle>
+      <FadeIn>
       <StatGrid>
         <Stat icon="speedometer" label="Average mileage" value={fmtEconomy(settings, v, st.avgRate)} color={colors.success} />
         <Stat icon="speedometer-slow" label="Last mileage" value={fmtEconomy(settings, v, st.lastRate)} />
@@ -74,8 +76,10 @@ export default function Reports() {
           sub={v.tankCapacity ? `${v.tankCapacity} L tank` : 'Set tank size in vehicle'}
         />
       </StatGrid>
+      </FadeIn>
 
       <SectionTitle>Monthly trend</SectionTitle>
+      <FadeIn delay={150}>
       <Card>
         <View style={{ marginBottom: 10 }}>
           <Chips<ChartKind>
@@ -102,6 +106,7 @@ export default function Reports() {
           />
         </View>
       </Card>
+      </FadeIn>
 
       <SectionTitle>Month by month</SectionTitle>
       {st.months.length === 0 ? (
@@ -109,10 +114,11 @@ export default function Reports() {
           <Text style={{ color: colors.sub }}>No entries yet.</Text>
         </Card>
       ) : (
-        st.months.map((m) => {
+        st.months.map((m, i) => {
           const perDist = m.distance > 0 ? m.fuelCost / m.distance : null;
           return (
-            <Card key={m.key}>
+            <FadeIn key={m.key} delay={250 + Math.min(i, 6) * 80}>
+            <Card>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                 <Text style={{ fontWeight: '800', fontSize: 16, color: colors.text }}>{monthLabel(m.key)}</Text>
                 <Text style={{ fontWeight: '800', fontSize: 16, color: colors.text }}>
@@ -127,6 +133,7 @@ export default function Reports() {
               {m.serviceCost > 0 ? <KV k="Service" v={fmtMoney(settings, m.serviceCost)} /> : null}
               {m.oilCost > 0 ? <KV k="Engine oil" v={fmtMoney(settings, m.oilCost)} /> : null}
             </Card>
+            </FadeIn>
           );
         })
       )}

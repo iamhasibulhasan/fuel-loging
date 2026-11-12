@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "FuelLog",
-    "slug": "fuellog",
-    "scheme": "fuellog",
+    "name": "Fuel Burn",
+    "slug": "fuelburn",
+    "scheme": "fuelburn",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.renosiatech.fuellog"
+      "bundleIdentifier": "com.renosiatech.fuelburn"
     },
     "android": {
-      "package": "com.renosiatech.fuellog",
+      "package": "com.renosiatech.fuelburn",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0F766E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -29,6 +29,22 @@
       "expo-router",
       "@react-native-community/datetimepicker",
       "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#0F766E"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Fuel Burn uses your photos to set your profile picture.",
+          "cameraPermission": "Fuel Burn uses the camera to take your profile picture."
+        }
+      ],
       "./plugins/withReleaseSigning"
     ]
   }

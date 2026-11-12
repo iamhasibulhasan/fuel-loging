@@ -51,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
   distanceUnit: 'km',
   volumeUnit: 'L',
   economyFormat: 'distPerVol',
+  theme: 'system',
   activeVehicleId: null,
 };
 

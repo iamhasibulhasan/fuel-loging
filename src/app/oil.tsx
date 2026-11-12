@@ -107,7 +107,7 @@ export default function OilForm() {
           suffix={unit}
           error={errors.interval}
         />
-        <View style={{ marginTop: -4, marginBottom: 14 }}>
+        <View style={{ marginTop: -4, marginBottom: 10 }}>
           <Chips
             wrap={false}
             color={colors.oil}
@@ -117,7 +117,7 @@ export default function OilForm() {
           />
         </View>
         {nextAt != null ? (
-          <View style={{ backgroundColor: colors.oilSoft, borderRadius: 12, padding: 12, marginBottom: 14 }}>
+          <View style={{ backgroundColor: colors.oilSoft, borderRadius: 12, padding: 12, marginBottom: 10 }}>
             <Text style={{ color: colors.oil, fontWeight: '700' }}>
               Next oil change at {fmtNum(nextAt)} {unit}
             </Text>

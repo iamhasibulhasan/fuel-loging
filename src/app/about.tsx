@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { Linking, Pressable, Text, View } from 'react-native';
+import { Logo } from '../components/Logo';
 import { Card, Icon, Screen } from '../components/ui';
 import { colors, COMPANY, copyright } from '../lib/theme';
 
@@ -8,10 +9,7 @@ export default function About() {
   return (
     <Screen>
       <View style={{ alignItems: 'center', marginVertical: 24, gap: 8 }}>
-        <View style={{ width: 84, height: 84, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="gas-station" size={46} color="#fff" />
-        </View>
-        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.text }}>FuelLog</Text>
+        <Logo size={96} showName />
         <Text style={{ color: colors.sub }}>Version {version}</Text>
       </View>
 

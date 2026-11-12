@@ -77,12 +77,25 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/FuelLog-v${VERSION_NAME}-build${VERSION_CODE}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/FuelBurn-v${VERSION_NAME}-build${VERSION_CODE}.apk"
           ls -lh dist
+
+      - name: Show signing fingerprints (add SHA-1 to Firebase for Google sign-in)
+        run: |
+          APK=$(ls dist/*.apk | head -n1)
+          FP=$(keytool -printcert -jarfile "$APK" | grep -E 'SHA1|SHA256' || true)
+          echo "$FP"
+          {
+            echo "### APK signing certificate"
+            echo "Add the **SHA-1** below to Firebase → Project settings → Android app \`com.renosiatech.fuelburn\`."
+            echo '```'
+            echo "$FP"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FuelLog-v${{ env.VERSION_NAME }}-build${{ env.VERSION_CODE }}
+          name: FuelBurn-v${{ env.VERSION_NAME }}-build${{ env.VERSION_CODE }}
           path: dist/*.apk
           retention-days: 30
 

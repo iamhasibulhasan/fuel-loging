@@ -21,7 +21,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ ...tab('Dashboard', 'view-dashboard'), headerTitle: 'FuelLog' }} />
+      <Tabs.Screen name="index" options={{ ...tab('Dashboard', 'view-dashboard'), headerTitle: 'Fuel Burn' }} />
       <Tabs.Screen name="history" options={tab('History', 'history')} />
       <Tabs.Screen name="stats" options={tab('Reports', 'chart-bar')} />
       <Tabs.Screen name="vehicles" options={tab('Vehicles', 'garage')} />

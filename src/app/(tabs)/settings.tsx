@@ -1,14 +1,20 @@
 import { router } from 'expo-router';
 import { Alert, Pressable, Text, View } from 'react-native';
-import { Card, Chips, Col, Field, Icon, Label, Row, Screen, SectionTitle } from '../../components/ui';
+import { Select } from '../../components/Select';
+import { Avatar, Card, Col, Field, Icon, Row, Screen, SectionTitle } from '../../components/ui';
+import { useAuth } from '../../lib/auth';
 import { exportBackup, exportCsv, pickBackup } from '../../lib/backup';
+import { deletePhoto } from '../../lib/photo';
+import type { ThemePref } from '../../lib/theme';
+import { setReturnRoute } from '../../lib/themeRoute';
 import { useStore } from '../../lib/store';
 import { colors, copyright } from '../../lib/theme';
 import type { DistanceUnit, EconomyFormat, VolumeUnit } from '../../lib/types';
-import { COUNTRIES, economyUnitLabel, VOLUME_NAME } from '../../lib/units';
+import { COUNTRIES, economyUnitLabel, VOLUME_LABEL, VOLUME_NAME } from '../../lib/units';
 
 export default function SettingsScreen() {
   const { data, settings, updateSettings, replaceAll, resetAll } = useStore();
+  const auth = useAuth();
 
   const applyCountry = (code: string) => {
     const c = COUNTRIES.find((x) => x.code === code);
@@ -34,7 +40,14 @@ export default function SettingsScreen() {
         `Found ${d.vehicles.length} vehicles, ${d.fuel.length} fuel, ${d.services.length} service and ${d.oils.length} oil entries. This replaces all current data.`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Restore', style: 'destructive', onPress: () => replaceAll(d) },
+          {
+            text: 'Restore',
+            style: 'destructive',
+            onPress: () => {
+              if (data.profile.photo && data.profile.photo !== d.profile.photo) deletePhoto(data.profile.photo);
+              replaceAll(d);
+            },
+          },
         ],
       );
     });
@@ -42,17 +55,111 @@ export default function SettingsScreen() {
   const doReset = () =>
     Alert.alert('Erase all data?', 'All vehicles and entries will be deleted permanently. Export a backup first if unsure.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Erase', style: 'destructive', onPress: resetAll },
+      {
+        text: 'Erase',
+        style: 'destructive',
+        onPress: () => {
+          deletePhoto(data.profile.photo);
+          resetAll();
+        },
+      },
     ]);
+
+  // signing out (or leaving guest mode) returns to the login screen; on-device data is kept
+  const doSignOut = () => {
+    if (auth.status !== 'user') {
+      auth.signOut();
+      return;
+    }
+    Alert.alert('Sign out?', 'Your fuel, service and oil records stay on this phone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => auth.signOut().catch((e) => Alert.alert('Sign out failed', String(e?.message ?? e))) },
+    ]);
+  };
+
+  const pr = data.profile;
+  const contact = [pr.phone, pr.email].filter(Boolean);
 
   return (
     <Screen>
+      <Pressable onPress={() => router.push('/profile')}>
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Avatar name={pr.name} photo={pr.photo} size={60} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }} numberOfLines={1}>
+              {pr.name || 'Set up your profile'}
+            </Text>
+            {contact.length ? (
+              contact.map((c) => (
+                <Text key={c} style={{ color: colors.sub, fontSize: 13, marginTop: 2 }} numberOfLines={1}>
+                  {c}
+                </Text>
+              ))
+            ) : (
+              <Text style={{ color: colors.sub, fontSize: 13, marginTop: 2 }}>Add your name, phone and email</Text>
+            )}
+          </View>
+          <Icon name="chevron-right" size={22} color={colors.faint} />
+        </Card>
+      </Pressable>
+
+      <SectionTitle>Account</SectionTitle>
+      <Card style={{ paddingVertical: 4 }}>
+        {auth.status === 'user' && auth.account ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 }}>
+              <Icon name={auth.account.provider === 'google' ? 'google' : 'email-check-outline'} size={22} color={auth.account.provider === 'google' ? '#EA4335' : colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontWeight: '600' }} numberOfLines={1}>
+                  {auth.account.email}
+                </Text>
+                <Text style={{ color: colors.sub, fontSize: 12 }}>Signed in with {auth.account.provider === 'google' ? 'Google' : 'email'}</Text>
+              </View>
+            </View>
+            <MenuRow icon="logout" title="Sign out" sub="Your records stay on this phone" danger onPress={doSignOut} last />
+          </>
+        ) : (
+          <MenuRow icon="login" title="Sign in / Create account" sub="You’re using Fuel Burn as a guest" onPress={doSignOut} last />
+        )}
+      </Card>
+
+      <SectionTitle>Appearance</SectionTitle>
+      <Card>
+        <Select<ThemePref>
+          label="Theme"
+          searchable={false}
+          options={[
+            { key: 'system', label: '📱  System default', sub: 'Follow the phone’s light / dark setting' },
+            { key: 'light', label: '☀️  Light' },
+            { key: 'dark', label: '🌙  Dark' },
+          ]}
+          value={settings.theme}
+          onChange={(t) => {
+            if (t === settings.theme) return;
+            setReturnRoute('/settings');
+            updateSettings({ theme: t });
+          }}
+        />
+      </Card>
+
       <SectionTitle>Country / region</SectionTitle>
       <Card>
-        <Text style={{ color: colors.sub, marginBottom: 10, fontSize: 13 }}>
-          Picks the currency and units used in that country. You can fine-tune them below.
+        <Select
+          label="Country"
+          options={[
+            ...COUNTRIES.map((c) => ({
+              key: c.code,
+              label: `${c.flag}  ${c.name}`,
+              sub: `${c.currencyCode} (${c.currencySymbol}) · ${c.distanceUnit} · ${VOLUME_NAME[c.volumeUnit]}`,
+            })),
+            ...(settings.country === 'custom' ? [{ key: 'custom', label: '⚙️  Custom', sub: 'Your own currency / units' }] : []),
+          ]}
+          value={settings.country}
+          onChange={applyCountry}
+        />
+        <Text style={{ color: colors.sub, fontSize: 13, marginTop: -6 }}>
+          Sets the currency and units used in that country. You can fine-tune them below.
         </Text>
-        <Chips options={COUNTRIES.map((c) => ({ key: c.code, label: `${c.flag} ${c.name}` }))} value={settings.country} onChange={applyCountry} />
       </Card>
 
       <SectionTitle>Currency</SectionTitle>
@@ -69,30 +176,37 @@ export default function SettingsScreen() {
 
       <SectionTitle>Units</SectionTitle>
       <Card>
-        <Label>Default distance unit (new vehicles)</Label>
-        <View style={{ marginBottom: 14 }}>
-          <Chips<DistanceUnit>
-            options={[
-              { key: 'km', label: 'Kilometres' },
-              { key: 'mi', label: 'Miles' },
-            ]}
-            value={settings.distanceUnit}
-            onChange={(u) => updateSettings({ distanceUnit: u })}
-          />
-        </View>
-        <Label>Fuel volume unit</Label>
-        <View style={{ marginBottom: 14 }}>
-          <Chips<VolumeUnit>
-            options={(['L', 'galUS', 'galUK'] as VolumeUnit[]).map((u) => ({ key: u, label: VOLUME_NAME[u] }))}
-            value={settings.volumeUnit}
-            onChange={(u) => updateSettings({ volumeUnit: u })}
-          />
-        </View>
-        <Label>Mileage format</Label>
-        <Chips<EconomyFormat>
+        <Select<DistanceUnit>
+          label="Default distance unit (new vehicles)"
+          searchable={false}
           options={[
-            { key: 'distPerVol', label: economyUnitLabel({ ...settings, economyFormat: 'distPerVol' }, settings.distanceUnit) },
-            { key: 'volPer100', label: economyUnitLabel({ ...settings, economyFormat: 'volPer100' }, settings.distanceUnit) },
+            { key: 'km', label: 'Kilometres (km)' },
+            { key: 'mi', label: 'Miles (mi)' },
+          ]}
+          value={settings.distanceUnit}
+          onChange={(u) => updateSettings({ distanceUnit: u })}
+        />
+        <Select<VolumeUnit>
+          label="Fuel volume unit"
+          searchable={false}
+          options={(['L', 'galUS', 'galUK'] as VolumeUnit[]).map((u) => ({ key: u, label: `${VOLUME_NAME[u]} (${VOLUME_LABEL[u]})` }))}
+          value={settings.volumeUnit}
+          onChange={(u) => updateSettings({ volumeUnit: u })}
+        />
+        <Select<EconomyFormat>
+          label="Mileage format"
+          searchable={false}
+          options={[
+            {
+              key: 'distPerVol',
+              label: economyUnitLabel({ ...settings, economyFormat: 'distPerVol' }, settings.distanceUnit),
+              sub: 'Distance per unit of fuel (higher is better)',
+            },
+            {
+              key: 'volPer100',
+              label: economyUnitLabel({ ...settings, economyFormat: 'volPer100' }, settings.distanceUnit),
+              sub: `Fuel per 100 ${settings.distanceUnit} (lower is better)`,
+            },
           ]}
           value={settings.economyFormat}
           onChange={(f) => updateSettings({ economyFormat: f })}
@@ -109,7 +223,7 @@ export default function SettingsScreen() {
 
       <SectionTitle>App</SectionTitle>
       <Card style={{ paddingVertical: 4 }}>
-        <MenuRow icon="information-outline" title="About FuelLog" sub={copyright()} onPress={() => router.push('/about')} last />
+        <MenuRow icon="information-outline" title="About Fuel Burn" sub={copyright()} onPress={() => router.push('/about')} last />
       </Card>
     </Screen>
   );
@@ -124,7 +238,7 @@ function MenuRow({ icon, title, sub, onPress, danger, last }: { icon: string; ti
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingVertical: 14,
+        paddingVertical: 11,
         opacity: pressed ? 0.6 : 1,
         borderBottomWidth: last ? 0 : 0.5,
         borderBottomColor: colors.border,

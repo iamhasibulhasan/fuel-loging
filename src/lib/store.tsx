@@ -1,11 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { AppData, FuelLog, OilLog, ServiceLog, Settings, Vehicle } from './types';
+import type { AppData, FuelLog, OilLog, Profile, ServiceLog, Settings, Vehicle } from './types';
 import { DEFAULT_SETTINGS } from './units';
 
 const STORAGE_KEY = 'fuellog:data:v1';
 
-const EMPTY: AppData = { version: 1, vehicles: [], fuel: [], services: [], oils: [], settings: DEFAULT_SETTINGS };
+export const EMPTY_PROFILE: Profile = {
+  photo: null,
+  name: '',
+  phone: '',
+  email: '',
+  occupation: '',
+  address: '',
+  city: '',
+  licenseNo: '',
+  licenseExpiry: null,
+  bloodGroup: '',
+  emergencyName: '',
+  emergencyPhone: '',
+};
+
+const EMPTY: AppData = { version: 1, profile: EMPTY_PROFILE, vehicles: [], fuel: [], services: [], oils: [], settings: DEFAULT_SETTINGS };
 
 type Collection = 'fuel' | 'services' | 'oils';
 type LogOf<C extends Collection> = C extends 'fuel' ? FuelLog : C extends 'services' ? ServiceLog : OilLog;
@@ -17,6 +32,7 @@ interface Store {
   activeVehicle: Vehicle | null;
   setActiveVehicle: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
+  saveProfile: (p: Profile) => void;
   saveVehicle: (v: Vehicle) => void;
   deleteVehicle: (id: string) => void;
   saveLog: <C extends Collection>(c: C, log: LogOf<C>) => void;
@@ -29,9 +45,10 @@ const Ctx = createContext<Store | null>(null);
 
 export function validateData(raw: unknown): AppData {
   const d = raw as Partial<AppData>;
-  if (!d || typeof d !== 'object' || !Array.isArray(d.vehicles)) throw new Error('Not a FuelLog backup file');
+  if (!d || typeof d !== 'object' || !Array.isArray(d.vehicles)) throw new Error('Not a Fuel Burn backup file');
   return {
     version: 1,
+    profile: { ...EMPTY_PROFILE, ...(d.profile ?? {}) },
     vehicles: d.vehicles,
     fuel: Array.isArray(d.fuel) ? d.fuel : [],
     services: Array.isArray(d.services) ? d.services : [],
@@ -68,6 +85,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setData((d) => ({ ...d, settings: { ...d.settings, ...patch } }));
   }, []);
+
+  const saveProfile = useCallback((p: Profile) => setData((d) => ({ ...d, profile: p })), []);
 
   const setActiveVehicle = useCallback((id: string) => updateSettings({ activeVehicleId: id }), [updateSettings]);
 
@@ -120,6 +139,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       activeVehicle,
       setActiveVehicle,
       updateSettings,
+      saveProfile,
       saveVehicle,
       deleteVehicle,
       saveLog,
@@ -127,7 +147,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       replaceAll,
       resetAll,
     }),
-    [data, ready, activeVehicle, setActiveVehicle, updateSettings, saveVehicle, deleteVehicle, saveLog, deleteLog, replaceAll, resetAll],
+    [data, ready, activeVehicle, setActiveVehicle, updateSettings, saveProfile, saveVehicle, deleteVehicle, saveLog, deleteLog, replaceAll, resetAll],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

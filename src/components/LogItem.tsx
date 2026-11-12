@@ -4,6 +4,7 @@ import { fmtDate, fmtMoney, fmtNum, fmtSmart } from '../lib/format';
 import { colors } from '../lib/theme';
 import type { FuelLog, OilLog, ServiceLog, Settings, Vehicle } from '../lib/types';
 import { VOLUME_LABEL } from '../lib/units';
+import { FadeIn } from './motion';
 import { Icon } from './ui';
 
 export type Entry =
@@ -26,7 +27,15 @@ const META = {
   oil: { icon: 'oil', color: colors.oil, bg: colors.oilSoft, path: '/oil' },
 } as const;
 
-export function LogItem({ entry, settings, vehicle }: { entry: Entry; settings: Settings; vehicle: Vehicle }) {
+export function LogItem({ entry, settings, vehicle, index = 0 }: { entry: Entry; settings: Settings; vehicle: Vehicle; index?: number }) {
+  return (
+    <FadeIn delay={Math.min(index, 12) * 45} distance={10}>
+      <LogRow entry={entry} settings={settings} vehicle={vehicle} />
+    </FadeIn>
+  );
+}
+
+function LogRow({ entry, settings, vehicle }: { entry: Entry; settings: Settings; vehicle: Vehicle }) {
   const m = META[entry.kind];
   let title = '';
   let sub = '';
@@ -54,14 +63,14 @@ export function LogItem({ entry, settings, vehicle }: { entry: Entry; settings: 
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingVertical: 12,
+        paddingVertical: 9,
         opacity: pressed ? 0.6 : 1,
         borderBottomWidth: 0.5,
         borderBottomColor: colors.border,
       })}
     >
-      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: m.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={m.icon} size={20} color={m.color} />
+      <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: m.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={m.icon} size={18} color={m.color} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{ fontWeight: '700', color: colors.text }} numberOfLines={1}>

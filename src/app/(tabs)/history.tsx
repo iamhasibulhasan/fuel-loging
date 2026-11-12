@@ -66,8 +66,8 @@ export default function History() {
               <Text style={{ fontWeight: '700', color: colors.sub }}>{fmtMoney(settings, entries.reduce((s, e) => s + amount(e), 0))}</Text>
             </View>
             <Card style={{ paddingVertical: 4 }}>
-              {entries.map((e) => (
-                <LogItem key={e.log.id} entry={e} settings={settings} vehicle={v} />
+              {entries.map((e, i) => (
+                <LogItem key={e.log.id} entry={e} settings={settings} vehicle={v} index={i} />
               ))}
             </Card>
           </View>

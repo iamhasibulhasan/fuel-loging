@@ -123,7 +123,7 @@ export default function VehicleForm() {
 
       <Card>
         <Label>Fuel type</Label>
-        <View style={{ marginBottom: 14 }}>
+        <View style={{ marginBottom: 10 }}>
           <Chips options={FUEL_TYPES} value={fuelType} onChange={setFuelType} />
         </View>
         <Row>
@@ -135,14 +135,14 @@ export default function VehicleForm() {
           </Col>
         </Row>
         <Field label="Power" numeric value={power} onChangeText={setPower} suffix={powerUnit} placeholder="15" />
-        <View style={{ marginTop: -4, marginBottom: 14 }}>
+        <View style={{ marginTop: -4, marginBottom: 10 }}>
           <Chips options={POWER_UNITS.map((u) => ({ key: u, label: u }))} value={powerUnit} onChange={setPowerUnit} />
         </View>
       </Card>
 
       <Card>
         <Label>Odometer unit</Label>
-        <View style={{ marginBottom: 14 }}>
+        <View style={{ marginBottom: 10 }}>
           <Chips
             options={[
               { key: 'km' as const, label: 'Kilometres (km)' },

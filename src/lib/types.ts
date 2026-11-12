@@ -88,11 +88,29 @@ export interface Settings {
   distanceUnit: DistanceUnit;
   volumeUnit: VolumeUnit;
   economyFormat: EconomyFormat;
+  theme: 'system' | 'light' | 'dark';
   activeVehicleId: string | null;
+}
+
+export interface Profile {
+  /** file name of the profile picture inside the app's document directory */
+  photo: string | null;
+  name: string;
+  phone: string;
+  email: string;
+  occupation: string;
+  address: string;
+  city: string;
+  licenseNo: string;
+  licenseExpiry: string | null; // YYYY-MM-DD
+  bloodGroup: string;
+  emergencyName: string;
+  emergencyPhone: string;
 }
 
 export interface AppData {
   version: 1;
+  profile: Profile;
   vehicles: Vehicle[];
   fuel: FuelLog[];
   services: ServiceLog[];

@@ -1,4 +1,4 @@
-# FuelLog
+# Fuel Burn
 
 Fuel, mileage, servicing and engine-oil logbook for Android, built with React Native (Expo SDK 58, Expo Router).
 
@@ -14,6 +14,9 @@ Fuel, mileage, servicing and engine-oil logbook for Android, built with React Na
 - **Reports**: average, last, best and worst mileage, fuel cost and running cost per km, average fuel price, estimated tank range, monthly charts (cost, litres, distance, mileage) and a month-by-month table.
 - **Regions**: Bangladesh is the default (BDT ৳, km, litre, km/L). Presets for India, Pakistan, Nepal, UAE, Saudi Arabia, Qatar, Kuwait, Oman, Malaysia, Singapore, Japan, China, Korea, Germany, France, Italy, UK, USA, Canada and Australia. Currency and units can also be set by hand.
 - **Data**: stored offline on the device. JSON backup/restore and CSV export (for Excel or Google Sheets) through the share sheet.
+- **Login**: email/password, Google, or guest (Firebase Authentication). Records stay on the phone in every case.
+- **Profile**: name, phone, email, address, driving licence (with an expiry reminder), blood group, emergency contact and a profile photo.
+- **Look and feel**: animated "FL" logo, animated dashboard and charts, and light, dark or system theme.
 
 Mileage uses the **full-tank to full-tank** method: the distance between two full-tank fills, divided by all fuel added after the first one. Partial fills between them are counted.
 
@@ -24,6 +27,18 @@ npm install
 npx expo run:android     # needs Android Studio / JDK 17 locally
 npm run typecheck
 ```
+
+## Setting up login (Firebase)
+
+Until this is done, the login screen offers guest mode only.
+
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
+2. **Authentication → Sign-in method:** enable **Email/Password** and **Google**.
+3. **Project settings → Your apps → Add app → Web.** Copy the `firebaseConfig` values into [src/config/firebase.ts](src/config/firebase.ts).
+4. **Authentication → Sign-in method → Google → Web SDK configuration.** Copy the **Web client ID** into `GOOGLE_WEB_CLIENT_ID` in the same file.
+5. **Project settings → Your apps → Add app → Android** with package `com.renosiatech.fuelburn`. Add the **SHA-1** fingerprint shown in the summary of each GitHub Actions build. If you later sign with your own keystore, add that SHA-1 as well.
+
+Email login works in Expo Go. Google login only works in the built APK.
 
 ## Automatic APK builds (GitHub Actions)
 
@@ -45,8 +60,8 @@ git tag v1.0.0 && git push origin v1.0.0
 Without secrets, the APK is signed with the default debug key. To use your own key:
 
 ```bash
-keytool -genkeypair -v -storetype PKCS12 -keystore fuellog.keystore -alias fuellog -keyalg RSA -keysize 2048 -validity 10000
-base64 -w0 fuellog.keystore   # copy the output
+keytool -genkeypair -v -storetype PKCS12 -keystore fuelburn.keystore -alias fuelburn -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 fuelburn.keystore   # copy the output
 ```
 
 Add these repository secrets (Settings → Secrets and variables → Actions):

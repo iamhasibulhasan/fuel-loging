@@ -104,7 +104,7 @@ export default function FuelForm() {
 
       <Card>
         <Label>Fill type</Label>
-        <View style={{ marginBottom: 14 }}>
+        <View style={{ marginBottom: 10 }}>
           <Chips
             color={colors.fuel}
             options={[
@@ -134,7 +134,7 @@ export default function FuelForm() {
 
       <Card>
         <Label>Volume unit</Label>
-        <View style={{ marginBottom: 14 }}>
+        <View style={{ marginBottom: 10 }}>
           <Chips
             color={colors.fuel}
             options={(['L', 'galUS', 'galUK'] as VolumeUnit[]).map((u) => ({ key: u, label: VOLUME_LABEL[u] }))}
@@ -173,7 +173,7 @@ export default function FuelForm() {
 
       <Card>
         <Label>Fuel type</Label>
-        <View style={{ marginBottom: 14 }}>
+        <View style={{ marginBottom: 10 }}>
           <Chips color={colors.fuel} options={FUEL_TYPES} value={fuelType} onChange={setFuelType} />
         </View>
         <Field label="Fuel station (optional)" value={station} onChangeText={setStation} placeholder="e.g. Padma Oil, Meghna Filling Station" />
