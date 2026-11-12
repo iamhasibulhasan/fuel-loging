@@ -46,7 +46,7 @@ Email login works in Expo Go. Google login only works in the built APK.
 
 | Trigger | Result |
 | --- | --- |
-| Push to `master` / pull request / manual run | APK uploaded as a workflow **artifact** (Actions → run → Artifacts) |
+| Push to `master` or `development` / pull request / manual run | APK uploaded as a workflow **artifact** (Actions → run → Artifacts) |
 | Push a tag like `v1.0.0` | APK also attached to a **GitHub Release** |
 
 ```bash
